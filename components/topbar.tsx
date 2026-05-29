@@ -22,20 +22,28 @@ export default function Topbar() {
   const pathname = usePathname()
 
   return (
-    <header className="h-14 px-6 flex items-center justify-between border-b border-[#e5e4e0] bg-white">
-      <h1
-        className="text-sm font-semibold text-[#1c1c1e] tracking-wide"
-        style={{ fontFamily: 'var(--font-syne), sans-serif' }}
-      >
-        {getTitle(pathname)}
-      </h1>
+    <header className="h-12 px-5 flex items-center justify-between border-b border-[#e5e4e0] bg-[#fafaf9]">
+      <div className="flex items-center gap-2">
+        <span
+          className="text-[10px] tracking-widest uppercase text-[#22d3a5]"
+          style={{ fontFamily: 'var(--font-mono), monospace' }}
+        >
+          //
+        </span>
+        <h1
+          className="text-[13px] font-semibold text-[#1c1c1e]"
+          style={{ fontFamily: 'var(--font-mono), monospace' }}
+        >
+          {getTitle(pathname)}
+        </h1>
+      </div>
 
       <SignOutButton>
         <button
-          className="text-xs text-[#b0aeaa] hover:text-[#1c1c1e] transition-colors cursor-pointer"
+          className="text-[11px] text-[#b0aeaa] hover:text-[#22d3a5] transition-colors cursor-pointer"
           style={{ fontFamily: 'var(--font-mono), monospace' }}
         >
-          sign out →
+          sign_out →
         </button>
       </SignOutButton>
     </header>
