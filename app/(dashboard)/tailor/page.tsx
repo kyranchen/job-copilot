@@ -11,8 +11,32 @@ export default function TailorPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [parsing, setParsing] = useState(false)
 
-  const canSubmit = jobDescription.trim() && resumeText.trim() && !loading
+  const canSubmit = jobDescription.trim() && resumeText.trim() && !loading && !parsing
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = '' // allow re-selecting the same file later
+    if (!file) return
+    setParsing(true)
+    setError(null)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/resume/parse', { method: 'POST', body: fd })
+      if (!res.ok) {
+        const msg = (await res.json().catch(() => ({}))).error ?? `Error ${res.status}`
+        throw new Error(msg)
+      }
+      const data = await res.json()
+      setResumeText(data.text)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to read file')
+    } finally {
+      setParsing(false)
+    }
+  }
 
   async function tailor() {
     setLoading(true)
@@ -75,20 +99,32 @@ export default function TailorPage() {
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="text-xs text-[#6b6b6b] uppercase tracking-widest" style={mono}>
-            Resume
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="text-xs text-[#6b6b6b] uppercase tracking-widest" style={mono}>
+              Resume
+            </label>
+            <label
+              className={`text-[11px] transition-colors ${parsing ? 'text-[#b0aeaa]' : 'text-[#22d3a5] hover:opacity-80 cursor-pointer'}`}
+              style={mono}
+            >
+              {parsing ? 'parsing…' : '↑ upload .pdf / .docx'}
+              <input
+                type="file"
+                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                className="hidden"
+                onChange={handleFile}
+                disabled={parsing}
+              />
+            </label>
+          </div>
           <textarea
             value={resumeText}
             onChange={e => setResumeText(e.target.value)}
-            placeholder="Paste your resume text here..."
+            placeholder="Paste your resume text here, or upload a file above…"
             rows={10}
             className={inputCls}
             style={mono}
           />
-          <span className="text-[11px] text-[#b0aeaa]" style={mono}>
-            file upload (.pdf, .docx) coming soon — paste your resume text for now
-          </span>
         </div>
 
         <button
