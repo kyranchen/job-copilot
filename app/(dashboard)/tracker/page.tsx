@@ -9,8 +9,8 @@ type Application = {
   company: string
   role: string
   stage: Stage
-  appliedAt: string
-  lastActivityAt: string
+  createdAt: string
+  updatedAt: string
   notes: string | null
 }
 
@@ -184,7 +184,7 @@ export default function TrackerPage() {
         ) : (
           apps.map(app => {
             const meta = stageMeta(app.stage)
-            const days = daysSince(app.appliedAt)
+            const days = daysSince(app.createdAt)
             const needsFollowUp = app.stage !== 'OFFER' && days >= 7
             return (
               <div
