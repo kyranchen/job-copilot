@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import JdField from '@/components/jd-field'
 import ResumeField from '@/components/resume-field'
 
 const mono = { fontFamily: 'var(--font-mono), monospace' }
@@ -55,20 +56,7 @@ export default function CoverLetterPage() {
       </div>
 
       <div className="flex flex-col gap-5">
-        <div className="flex flex-col gap-2">
-          <label className="text-xs text-[#6b6b6b] uppercase tracking-widest" style={mono}>
-            Job Description
-          </label>
-          <textarea
-            value={jobDescription}
-            onChange={e => setJobDescription(e.target.value)}
-            placeholder="Paste the job description here..."
-            rows={8}
-            className="w-full bg-white border border-[#e5e4e0] rounded-xl p-4 text-sm text-[#1c1c1e] placeholder-[#b0aeaa] resize-none focus:outline-none focus:border-[#22d3a5]/60 transition-colors shadow-sm"
-            style={mono}
-          />
-        </div>
-
+        <JdField value={jobDescription} onChange={setJobDescription} />
         <ResumeField value={resumeText} onChange={setResumeText} />
 
         <button
