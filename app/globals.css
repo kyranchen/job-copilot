@@ -18,6 +18,33 @@
   --muted2:   #b0aeaa;
 }
 
+/* ── TRACKER WORKSPACE (scoped dark theme) ── */
+.tracker-ws {
+  --ws-bg:       #0d0f14;
+  --ws-bg2:      #0f1119;
+  --ws-surface:  #161a28;
+  --ws-surf2:    #1d2138;
+  --ws-border:   #252840;
+  --ws-border2:  #363b56;
+  --ws-text:     #e8e8f0;
+  --ws-muted:    #7a7d96;
+  --ws-muted2:   #4a4d68;
+  --ws-accent:   #f0c14b;
+  --ws-aInk:     #1a1200;
+  --ws-blue:     #6b84fa;
+  --ws-teal:     #34d399;
+  --ws-red:      #f87171;
+  --ws-amber:    #f59e0b;
+  --ws-purple:   #9d7af0;
+
+  background: var(--ws-bg);
+  color: var(--ws-text);
+  font-family: var(--font-mono), monospace;
+}
+.tracker-ws ::-webkit-scrollbar { width: 4px; height: 4px; }
+.tracker-ws ::-webkit-scrollbar-track { background: transparent; }
+.tracker-ws ::-webkit-scrollbar-thumb { background: var(--ws-border); border-radius: 4px; }
+
 @theme inline {
   --color-background: var(--bg);
   --color-foreground: var(--text);
