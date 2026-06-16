@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server'
 
 const BASE = process.env.BACKEND_URL ?? 'http://localhost:8080'
 
+export const maxDuration = 60
+
 /**
  * Multipart proxy for resume file uploads. Unlike the JSON proxyToBackend helper,
  * this forwards the multipart form body (letting fetch set the boundary) along with
