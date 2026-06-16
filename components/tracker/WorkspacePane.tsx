@@ -1,20 +1,20 @@
 'use client'
 
 import { useState } from 'react'
-import type { Application, BackendStage } from './types'
-import { isOverdue, doneCount } from './types'
+import type { Application, PipelineStage } from './types'
+import { isOverdue, doneCount, currentStage } from './types'
 import { JobDetailsStep, TailorStep, AtsStep, CoverLetterStep, TrackStageStep } from './steps'
 
 const STEP_TABS = ['Job Details', 'Tailor Resume', 'ATS Score', 'Cover Letter', 'Track Stage']
 
 export default function WorkspacePane({
   app,
-  onAdvance,
+  onUpdatePipeline,
   onReject,
   onArchive,
 }: {
   app: Application | null
-  onAdvance: (id: string, stage: BackendStage) => void
+  onUpdatePipeline: (id: string, pipeline: PipelineStage[]) => void
   onReject: (id: string) => void
   onArchive: (id: string) => void
 }) {
@@ -27,14 +27,14 @@ export default function WorkspacePane({
       </div>
     )
   }
-  return <AppDetail key={app.id} app={app} onAdvance={onAdvance} onReject={onReject} onArchive={onArchive} />
+  return <AppDetail key={app.id} app={app} onUpdatePipeline={onUpdatePipeline} onReject={onReject} onArchive={onArchive} />
 }
 
 function AppDetail({
-  app, onAdvance, onReject, onArchive,
+  app, onUpdatePipeline, onReject, onArchive,
 }: {
   app: Application
-  onAdvance: (id: string, stage: BackendStage) => void
+  onUpdatePipeline: (id: string, pipeline: PipelineStage[]) => void
   onReject: (id: string) => void
   onArchive: (id: string) => void
 }) {
@@ -44,7 +44,7 @@ function AppDetail({
 
   const overdue = isOverdue(app)
   const rejected = app.appStatus === 'rejected'
-  const current = app.pipeline.find(s => s.status === 'current')
+  const current = currentStage(app.pipeline)
 
   return (
     <div className="flex-1 flex flex-col min-w-0" style={{ background: 'var(--ws-bg)' }}>
@@ -107,7 +107,7 @@ function AppDetail({
         <div style={{ display: step === 1 ? 'block' : 'none' }}><TailorStep jd={jd} resume={resume} setResume={setResume} /></div>
         <div style={{ display: step === 2 ? 'block' : 'none' }}><AtsStep jd={jd} resume={resume} setResume={setResume} /></div>
         <div style={{ display: step === 3 ? 'block' : 'none' }}><CoverLetterStep jd={jd} resume={resume} setResume={setResume} /></div>
-        <div style={{ display: step === 4 ? 'block' : 'none' }}><TrackStageStep app={app} onAdvance={s => onAdvance(app.id, s)} /></div>
+        <div style={{ display: step === 4 ? 'block' : 'none' }}><TrackStageStep app={app} onUpdate={p => onUpdatePipeline(app.id, p)} /></div>
       </div>
     </div>
   )

@@ -1,23 +1,12 @@
-// Frontend model for the tracker workspace. The backend persists company/role/stage;
-// the richer fields (pipeline status, steps, appStatus) are derived or frontend-only for v1.
+// Frontend model for the tracker workspace. The backend now persists the full
+// per-application pipeline + appStatus, so these map straight through.
 
-export type BackendStage = 'APPLIED' | 'PHONE_SCREEN' | 'TECHNICAL' | 'SYSTEM_DESIGN' | 'OFFER'
-
-export const DEFAULT_STAGES: { key: BackendStage; label: string }[] = [
-  { key: 'APPLIED', label: 'Applied' },
-  { key: 'PHONE_SCREEN', label: 'Phone Screen' },
-  { key: 'TECHNICAL', label: 'Technical' },
-  { key: 'SYSTEM_DESIGN', label: 'System Design' },
-  { key: 'OFFER', label: 'Offer' },
-]
-
-export type AppStatus = 'active' | 'rejected' | 'archived'
 export type StageStatus = 'done' | 'current' | 'upcoming' | 'rejected'
+export type AppStatus = 'active' | 'rejected' | 'archived'
 
 export type PipelineStage = {
   id: string
   label: string
-  key?: BackendStage
   status: StageStatus
 }
 
@@ -25,62 +14,70 @@ export type Application = {
   id: string
   company: string
   role: string
-  stage: BackendStage // persisted current stage
+  appStatus: AppStatus
+  pipeline: PipelineStage[]
   createdAt: string
   days: number
-  appStatus: AppStatus
-  rejectedStage?: string
-  steps: boolean[] // [jobDetails, tailor, ats, cover, track] — frontend-only
-  pipeline: PipelineStage[]
+  notes: string | null
 }
 
 type BackendApplication = {
   id: string
   company: string
   role: string
-  stage: BackendStage
+  pipeline?: PipelineStage[]
+  appStatus?: AppStatus
   createdAt: string
   updatedAt: string
   notes: string | null
+}
+
+const DEFAULT_LABELS = ['Applied', 'Phone Screen', 'Technical', 'System Design', 'Offer']
+
+export function defaultPipeline(): PipelineStage[] {
+  return DEFAULT_LABELS.map((label, i) => ({
+    id: crypto.randomUUID(),
+    label,
+    status: i === 0 ? 'current' : 'upcoming',
+  }))
 }
 
 export function daysSince(iso: string): number {
   return Math.max(0, Math.floor((Date.now() - Date.parse(iso)) / 86_400_000))
 }
 
-/** Build the default 5-stage pipeline with status relative to the current stage. */
-export function buildPipeline(current: BackendStage, rejectedStage?: string): PipelineStage[] {
-  const currentIdx = DEFAULT_STAGES.findIndex(s => s.key === current)
-  return DEFAULT_STAGES.map((s, i) => {
-    let status: StageStatus
-    if (rejectedStage && s.label === rejectedStage) status = 'rejected'
-    else if (i < currentIdx) status = 'done'
-    else if (i === currentIdx) status = 'current'
-    else status = 'upcoming'
-    return { id: s.key, label: s.label, key: s.key, status }
-  })
-}
-
-/** Map a backend record into the workspace Application model. */
 export function fromBackend(raw: BackendApplication): Application {
   return {
     id: raw.id,
     company: raw.company,
     role: raw.role,
-    stage: raw.stage,
+    appStatus: raw.appStatus ?? 'active',
+    pipeline: raw.pipeline && raw.pipeline.length ? raw.pipeline : defaultPipeline(),
     createdAt: raw.createdAt,
     days: daysSince(raw.createdAt),
-    appStatus: 'active',
-    steps: [false, false, false, false, false],
-    pipeline: buildPipeline(raw.stage),
+    notes: raw.notes ?? null,
   }
 }
 
-/** Overdue: active, 7+ days, and not yet at Offer. */
+export function currentStage(pipeline: PipelineStage[]): PipelineStage | undefined {
+  return pipeline.find(s => s.status === 'current')
+}
+
+/** Overdue: active, 7+ days, and the current stage isn't the last one. */
 export function isOverdue(app: Application): boolean {
-  return app.appStatus === 'active' && app.days >= 7 && app.stage !== 'OFFER'
+  if (app.appStatus !== 'active' || app.days < 7) return false
+  const idx = app.pipeline.findIndex(s => s.status === 'current')
+  return idx >= 0 && idx < app.pipeline.length - 1
 }
 
 export function doneCount(app: Application): number {
   return app.pipeline.filter(s => s.status === 'done' || s.status === 'current').length
+}
+
+/** Recompute statuses so stage `index` is current (prior = done, after = upcoming). */
+export function withCurrent(pipeline: PipelineStage[], index: number): PipelineStage[] {
+  return pipeline.map((s, i) => ({
+    ...s,
+    status: i < index ? 'done' : i === index ? 'current' : 'upcoming',
+  }))
 }

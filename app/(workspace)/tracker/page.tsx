@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import IconRail from '@/components/tracker/IconRail'
 import AppListPane from '@/components/tracker/AppListPane'
 import WorkspacePane from '@/components/tracker/WorkspacePane'
-import type { Application, BackendStage } from '@/components/tracker/types'
-import { fromBackend, buildPipeline, isOverdue, doneCount } from '@/components/tracker/types'
+import type { Application, AppStatus, PipelineStage } from '@/components/tracker/types'
+import { fromBackend, isOverdue, doneCount } from '@/components/tracker/types'
 
 export default function TrackerWorkspace() {
   const [apps, setApps] = useState<Application[]>([])
@@ -57,7 +57,7 @@ export default function TrackerWorkspace() {
     try {
       const res = await fetch('/api/applications', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ company, role, stage: 'APPLIED' }),
+        body: JSON.stringify({ company, role }),
       })
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? `Error ${res.status}`)
       const created = fromBackend(await res.json())
@@ -69,26 +69,30 @@ export default function TrackerWorkspace() {
     }
   }
 
-  async function advance(id: string, stage: BackendStage) {
-    setApps(prev => prev.map(a => a.id === id ? { ...a, stage, pipeline: buildPipeline(stage, a.rejectedStage) } : a)) // optimistic
+  async function updatePipeline(id: string, pipeline: PipelineStage[]) {
+    setApps(prev => prev.map(a => a.id === id ? { ...a, pipeline } : a)) // optimistic
+    await patch(id, { pipeline })
+  }
+
+  async function setStatus(id: string, appStatus: AppStatus) {
+    setApps(prev => prev.map(a => a.id === id ? { ...a, appStatus } : a)) // optimistic
+    if (appStatus === 'archived' && selectedId === id) setSelectedId(null)
+    await patch(id, { appStatus })
+  }
+
+  async function patch(id: string, body: Record<string, unknown>) {
     try {
       const res = await fetch(`/api/applications/${id}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stage }),
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
       })
       if (!res.ok) throw new Error()
     } catch {
-      load()
+      load() // revert to server truth
     }
   }
 
-  // Reject / archive are frontend-only in v1 (not yet persisted).
-  function reject(id: string) {
-    setApps(prev => prev.map(a => a.id === id ? { ...a, appStatus: 'rejected' as const } : a))
-  }
-  function archive(id: string) {
-    setApps(prev => prev.map(a => a.id === id ? { ...a, appStatus: 'archived' as const } : a))
-    if (selectedId === id) setSelectedId(null)
-  }
+  const reject = (id: string) => setStatus(id, 'rejected')
+  const archive = (id: string) => setStatus(id, 'archived')
 
   return (
     <div className="tracker-ws flex" style={{ height: '100vh', overflow: 'hidden' }}>
@@ -109,7 +113,7 @@ export default function TrackerWorkspace() {
             onNew={() => setShowNew(true)}
             searchRef={searchRef}
           />
-          <WorkspacePane app={selected} onAdvance={advance} onReject={reject} onArchive={archive} />
+          <WorkspacePane app={selected} onUpdatePipeline={updatePipeline} onReject={reject} onArchive={archive} />
         </>
       ) : (
         <div className="flex-1 flex items-center justify-center" style={{ background: 'var(--ws-bg)' }}>
